@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="jeffrey">
+	<head>
+		
+		<meta charset="utf-8">
+		<title>Creative Clock</title>
+		<link href="./style.css" rel="stylesheet">
+		<link href="./clock.css" rel="stylesheet">
+		
+		<script src="//d3js.org/d3.v3.min.js"></script>
+	</head>
+
+	<header>
+		<aside>August 5, 2016 </aside> Jeffrey West
+	</header>
+
+
+	
+<body>
+	
+	<h1> Creative Clock </h1>
+<!-- 	<input type="text" name="LastName" value="Category 1"> -->
+<!-- 	<h3 id="currentTime"> Current time: <h3> -->
+
+	<script>		
+		
+		// twenty four hours of data
+		var timeData = Array.apply(null, Array(24)).map(Number.prototype.valueOf,0);
+		var currentColor = 0;
+		
+		console.log(timeData);
+		
+		
+		var width = 960,
+		    height = 600,
+		    radius = 250;
+		
+		var color = d3.scale.ordinal()
+    	.range(["#C0392B", "#9B59B6", "#2980B9", "#1ABC9C", "#F1C40F", "#283747", "#E67E22"]);  
+		
+		var arc = d3.svg.arc()
+		    .outerRadius(radius - 10)
+		    .innerRadius(radius - 70);
+
+    var arcOver = d3.svg.arc()
+      .outerRadius(radius + 10)
+		  .innerRadius(radius - 70);
+		
+		var pie = d3.layout.pie()
+		    .sort(null)
+		    .value(function(d) { return d.lengthOfTime; });
+		
+		var svg = d3.select("body").append("svg")
+		    .attr("width", width)
+		    .attr("height", height)
+		  .append("g")
+		    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+		   
+		//Draw the Circle
+		var innerCircle = svg.append("circle")
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("r", radius - 90)
+        .attr("fill", "#fff")
+        .attr("stroke", "black")
+         .attr("stroke-width", 2);
+
+		var timeLabel = svg.append("text")
+		   .attr("text-anchor", "middle")
+		   .style("font-size", 25)
+		   .style("id","currentTime")
+		   .style("font-family", "PT Serif")
+		   .text("Hover over a time");
+
+
+		d3.csv("hours.csv", type, function(error, data) {
+		  if (error) throw error;
+		
+		  var g = svg.selectAll(".arc")
+		      .data(pie(data))
+		    .enter().append("g")
+		      .attr("class", "arc");
+
+		  g.append('path')
+      	.attr('d', arc)
+				.attr('fill', function(d, i) {
+        return color(currentColor);
+      })
+      .on("mouseover", function(d) {
+        d3.select(this).transition()
+          .duration(100)
+          .attr("d", arcOver);
+          
+        timeLabel.text(d.data.time);          
+      })
+      .on("mouseout", function(d) {
+        d3.select(this).transition()
+          .duration(1000)
+          .attr("d", arc);
+          
+        timeLabel.text("Hover over a time");
+      })
+      .on("click", function(d, i) {
+	      d3.select(this)
+	      	.attr("fill", function(d) {
+		      	
+		      	// update timeData with selection
+		      	timeData[i] = currentColor;		      	
+		      	console.log(timeData);
+		      	
+		      	var newColor = color(currentColor);
+		      	
+		      	newColor = newColor == newColor ? newColor : color(0);
+		        d3.select(this).style("fill", newColor);
+		        
+		        
+		        
+		      	
+	      	})
+      }); 
+		});
+		
+		
+		////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////
+		
+		
+		var legendEntries = d3.scale.ordinal()
+    	.range(["Primary Work", "Sleep", "Social & Meals", "Chores", "Exercise", "Other work", "Commute"]);
+		
+		var legend = d3.select("body").append("svg")
+		    .attr("width", width)
+		    .attr("height", height)
+                 
+		legend.selectAll("rect")
+	   	.data(color)
+	   	.enter()
+	   	.append("rect")
+	   		.attr("x", 20)
+		 		.attr("y", function(d, i) {
+			    return i * 50 + 20;
+				})
+				.attr("width", 30)
+				.attr("height", 30)
+				.attr("fill", function(d, i) {
+			    return color(i);
+				})
+			.on("mouseover", function(d) {
+        d3.select(this).transition()
+          .duration(100)
+          .attr("stroke", "black")
+          .attr("stroke-width", 5);
+          
+      })
+      .on("mouseout", function(d) {
+        d3.select(this).transition()
+          .duration(100)
+          .attr("stroke-width", 0);
+          
+      })
+      .on("click", function(d, i) {
+	      currentColor = i;
+	      
+	      // also change color of inner circle
+		        console.log(innerCircle);
+		        innerCircle.style("fill", color(currentColor));
+	      
+	    });
+		
+
+
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(0));
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45 + 50)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(1));
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45 + 50*2)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(2));
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45 + 50*3)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(3));
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45 + 50*4)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(4));
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45 + 50*5)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(5));
+			
+		legend.append("text")
+			.attr("x", 70)
+			.attr("y", 45 + 50*6)
+			.style("font-family", "PT Serif")
+			.style("font-size", 25)
+			.text(legendEntries(6));
+
+		
+
+			
+			
+			
+		function type(d) {
+		  d.lengthOfTime = +d.lengthOfTime;
+		  return d;
+		}
+		
+/*
+		svg.append("text")
+		   .attr("text-anchor", "middle")
+		   .style("font-size", 25)
+		   .style("id","currentTime")
+		   .style("font-family", "PT Serif")
+		   .text("Hover over a time");
+*/
+		
+
+		
+		
+	
+	</script><!-- 	<input type="text" name="LastName" value="Category 1"> -->
+</body>
+</html>
