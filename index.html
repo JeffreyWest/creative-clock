@@ -3,9 +3,19 @@
 	<head>
 		
 		<meta charset="utf-8">
+		
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:site" content="@mathoncbro">
+		<meta name="twitter:creator" content="@mathoncbro">
+		<meta name="twitter:title" content="Color Wheel of Life">
+		<meta name="twitter:description" content="The Color Wheel of Life is an interactive app that visually displays how you spend your day.">
+		<meta name="twitter:image" content="https://jeffreywest.github.io/creative-clock/screenshot.png">
+		
+		
 		<title>Creative Clock</title>
 		<link href="./style.css" rel="stylesheet">
 		<link href="./clock.css" rel="stylesheet">
+		<script src="./graph_functions.js"></script>
 		
 		<script src="//d3js.org/d3.v3.min.js"></script>
 	</head>
@@ -18,25 +28,103 @@
 	
 <body>
 	
-	<h1> Creative Clock </h1>
-<!-- 	<input type="text" name="LastName" value="Category 1"> -->
-<!-- 	<h3 id="currentTime"> Current time: <h3> -->
+	<div class="main" id="main">
+	
+		<h1> Color Wheel of Life </h1>
+		<h3> About </h3>
+		<p> The Color Wheel of Life is an interactive app that visually displays how you spend your day. The idea came from an <a href="http://www.fastcocreate.com/3028428/infographic-see-the-daily-routines-of-the-worlds-most-famous-creative-people">infographic</a> I saw a few years ago. The graphic explained how creativity is elusive -- many famous creatives over the course of history have chosen to spend their days very different. How do you spend your day?
+		</p>
+		
+		<h3> How it works </h3>
+		<p> First, click on a category. Then click on one the segments around the clock to add an hour of that activity.
+		</p>
+		
+		<h3> Hours or half-hours? </h3>
+		<p> You can change the resolution of the clock by toggling the switch below. Choose between a half hour resolution or full hour.</p>
+			<!-- Rounded switch -->
+			<label class="switch">
+			  <input type="checkbox" id="hoursToggle" value="OFF" onclick="myToggle(this);">
+			  <div class="slider round"></div>
+			</label>
 
-	<script>		
 		
-		// twenty four hours of data
-		var timeData = Array.apply(null, Array(24)).map(Number.prototype.valueOf,0);
+
+	</div>
+	
+	<div class="clock_and_legend">
+	</div>
+
+	<div class="main">
+				<h3> Jeffrey's Color Wheel </h3>
+				<a href="javascript:loadJeffrey();"><img src="./jeffrey.png" alt="Jeffrey's face" width="140" height="140" onclick="load"></a>
+				<p> Click on my image to see my daily routine on the color wheel above.</p>
+	</div>
+	
+	<script>
+		
+		var thisHeight = document.getElementById('main').offsetHeight;
+		var thisWidth = document.getElementById('main').offsetWidth;
+				
+		var legendHeight = 600,
+				barHeight = 400,
+		    legendOffset = 50;
+		
+		var width,
+		 		height,
+		 		radius,
+		 		globalFontSize,
+		 		outlineBoxWidth,
+		 		outlineBoxHeight,
+		 		bargraphHorizOffset;
+		
+		if (thisWidth >= 900) {
+			width = 600;
+			height = 600;
+			globalFontSize = 25;
+			outlineBoxWidth = 350;
+			outlineBoxHeight = 100;
+			bargraphHorizOffset = 300;
+			
+			radius = 290;
+		} else {
+			
+			width = Math.round(thisWidth*0.9);
+			height = Math.round(thisWidth*0.9);;
+			
+			radius = Math.round(thisWidth*0.45);
+			globalFontSize = 12;
+			
+			outlineBoxWidth = Math.round(thisWidth*0.3);
+			outlineBoxHeight = Math.round(thisWidth*0.15);
+			
+			
+			bargraphHorizOffset = Math.round(thisWidth*0.5);
+		}		
+		
+		
+		
+		
+		
+		
+		// initialize with 24 hours
+		var timeData = [1,1,1,1,1,1,1,1,2,6,4,0,0,0,0,0,0,0,6,2,5,2,2,2];
+		
+		var jeffreyData = [];
+		
+		
+		
+		var fileName = "hours.csv";
+
+		var firstTime = 0;
 		var currentColor = 0;
+		var totalHourSegments = 24;
+
 		
-		console.log(timeData);
-		
-		
-		var width = 960,
-		    height = 600,
-		    radius = 250;
 		
 		var color = d3.scale.ordinal()
-    	.range(["#C0392B", "#9B59B6", "#2980B9", "#1ABC9C", "#F1C40F", "#283747", "#E67E22"]);  
+    	.range(["#C0392B", "#9B59B6", "#2980B9", "#1ABC9C", "#F1C40F", "#283747", "#E67E22"]);
+    	
+    var legendEntries = ["Primary Work", "Sleep", "Social & Meals", "Chores", "Exercise", "Other work", "Commute"];  
 		
 		var arc = d3.svg.arc()
 		    .outerRadius(radius - 10)
@@ -45,102 +133,57 @@
     var arcOver = d3.svg.arc()
       .outerRadius(radius + 10)
 		  .innerRadius(radius - 70);
+		  
+		var lineFunction = d3.svg.line()
+      .x(function(d) { return d.x; })
+      .y(function(d) { return d.y; })
+      .interpolate("linear");
 		
 		var pie = d3.layout.pie()
 		    .sort(null)
 		    .value(function(d) { return d.lengthOfTime; });
-		
-		var svg = d3.select("body").append("svg")
+		    
+		var svg = d3.select(".clock_and_legend").append("svg")
+				.attr("id", "clockMain")
 		    .attr("width", width)
 		    .attr("height", height)
 		  .append("g")
 		    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
-		   
+		    
 		//Draw the Circle
-		var innerCircle = svg.append("circle")
-        .attr("cx", 0)
-        .attr("cy", 0)
-        .attr("r", radius - 90)
-        .attr("fill", "#fff")
-        .attr("stroke", "black")
-         .attr("stroke-width", 2);
-
-		var timeLabel = svg.append("text")
-		   .attr("text-anchor", "middle")
-		   .style("font-size", 25)
-		   .style("id","currentTime")
-		   .style("font-family", "PT Serif")
-		   .text("Hover over a time");
-
-
-		d3.csv("hours.csv", type, function(error, data) {
-		  if (error) throw error;
-		
-		  var g = svg.selectAll(".arc")
-		      .data(pie(data))
-		    .enter().append("g")
-		      .attr("class", "arc");
-
-		  g.append('path')
-      	.attr('d', arc)
-				.attr('fill', function(d, i) {
-        return color(currentColor);
-      })
-      .on("mouseover", function(d) {
-        d3.select(this).transition()
-          .duration(100)
-          .attr("d", arcOver);
-          
-        timeLabel.text(d.data.time);          
-      })
-      .on("mouseout", function(d) {
-        d3.select(this).transition()
-          .duration(1000)
-          .attr("d", arc);
-          
-        timeLabel.text("Hover over a time");
-      })
-      .on("click", function(d, i) {
-	      d3.select(this)
-	      	.attr("fill", function(d) {
-		      	
-		      	// update timeData with selection
-		      	timeData[i] = currentColor;		      	
-		      	console.log(timeData);
-		      	
-		      	var newColor = color(currentColor);
-		      	
-		      	newColor = newColor == newColor ? newColor : color(0);
-		        d3.select(this).style("fill", newColor);
-		        
-		        
-		        
-		      	
-	      	})
-      }); 
-		});
-		
+	var innerCircle = svg.append("circle")
+			.attr("id", "myCircle")
+      .attr("cx", 0)
+      .attr("cy", 0)
+      .attr("r", radius - 90)
+      .attr("fill", "#fff")
+      .attr("stroke", "black")
+       .attr("stroke-width", 2);
+       
+  var timeLabel = svg.append("text")
+	   .attr("text-anchor", "middle")
+	   .style("font-size", globalFontSize)
+	   .style("id","currentTime")
+	   .style("font-family", "PT Serif")
+	   .text("Choose a category");
 		
 		////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////
-		
-		
-		var legendEntries = d3.scale.ordinal()
-    	.range(["Primary Work", "Sleep", "Social & Meals", "Chores", "Exercise", "Other work", "Commute"]);
-		
-		var legend = d3.select("body").append("svg")
+    	
+		var legend = d3.select(".clock_and_legend").append("svg")
+				.attr("id", "clockLegend")
 		    .attr("width", width)
-		    .attr("height", height)
-                 
+		    .attr("height", legendHeight)
+		    
 		legend.selectAll("rect")
 	   	.data(color)
 	   	.enter()
 	   	.append("rect")
 	   		.attr("x", 20)
 		 		.attr("y", function(d, i) {
-			    return i * 50 + 20;
+			    return i * 70 + legendOffset;
 				})
 				.attr("width", 30)
 				.attr("height", 30)
@@ -153,97 +196,57 @@
           .attr("stroke", "black")
           .attr("stroke-width", 5);
           
+        d3.select(this).style("cursor", "pointer")
+          
       })
       .on("mouseout", function(d) {
         d3.select(this).transition()
           .duration(100)
           .attr("stroke-width", 0);
           
+        d3.select(this).style("cursor", "default")
+          
       })
       .on("click", function(d, i) {
-	      currentColor = i;
-	      
-	      // also change color of inner circle
-		        console.log(innerCircle);
-		        innerCircle.style("fill", color(currentColor));
+	      currentColor = i;	      
+        innerCircle.style("fill", color(currentColor));
+        firstTime = 1;
+        
+        timeLabel.text("Add time for " + legendEntries[currentColor]);
 	      
 	    });
 		
 
-
+			// add legend labels
+			for (i = 0; i < legendEntries.length; i++) { 
+				legend.append("text")
+					.attr("x", 70)
+					.attr("y", legendOffset + 25 + 70*i)
+					.style("font-family", "PT Serif")
+					.style("font-size", globalFontSize)
+					.text(legendEntries[i]);
+			}
 			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(0));
 			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45 + 50)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(1));
 			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45 + 50*2)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(2));
-			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45 + 50*3)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(3));
-			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45 + 50*4)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(4));
-			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45 + 50*5)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(5));
-			
-		legend.append("text")
-			.attr("x", 70)
-			.attr("y", 45 + 50*6)
-			.style("font-family", "PT Serif")
-			.style("font-size", 25)
-			.text(legendEntries(6));
-
+		var lineData = [ { "x": bargraphHorizOffset,   "y": legendHeight - 80},  { "x": bargraphHorizOffset,  "y": legendOffset - 20} ];
+		var barGraph = legend.append("svg")
+	    .attr("width", width)
+	    .attr("height", height)
+	    .attr("id","bargraph");
+	    
+	  var bot = barGraph.append("path")
+	  									.attr("d", lineFunction(lineData))
+	  									.attr("stroke", "black")
+	  									.attr("stroke-width", 4)
+	  									.attr("fill", "none");
 		
+		
+		drawBarGraph();
+		drawClock();
 
-			
-			
-			
-		function type(d) {
-		  d.lengthOfTime = +d.lengthOfTime;
-		  return d;
-		}
-		
-/*
-		svg.append("text")
-		   .attr("text-anchor", "middle")
-		   .style("font-size", 25)
-		   .style("id","currentTime")
-		   .style("font-family", "PT Serif")
-		   .text("Hover over a time");
-*/
-		
-
-		
 		
 	
-	</script><!-- 	<input type="text" name="LastName" value="Category 1"> -->
+	</script>
 </body>
 </html>
